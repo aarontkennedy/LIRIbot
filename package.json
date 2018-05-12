@@ -1,0 +1,28 @@
+{
+  "name": "liribot",
+  "version": "1.0.0",
+  "description": "LIRIbot is a homework assignment that implements a node app that will act like a really stupid SIRI. Ask it about Tweets, Music, and Movies.",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aarontkennedy/LIRIbot.git"
+  },
+  "keywords": [
+    "node"
+  ],
+  "author": "Aaron Kennedy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aarontkennedy/LIRIbot/issues"
+  },
+  "homepage": "https://github.com/aarontkennedy/LIRIbot#readme",
+  "dependencies": {
+    "dotenv": "^5.0.1",
+    "node-spotify-api": "^1.0.7",
+    "request": "^2.85.0",
+    "twitter": "^1.7.1"
+  }
+}
