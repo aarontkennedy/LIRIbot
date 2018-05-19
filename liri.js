@@ -23,24 +23,40 @@ let client = new Twitter(keys.twitter);
 // fs is a core Node package for reading and writing files
 var fs = require("fs");
 
-/*
-Make it so liri.js can take in one of the following commands:
-
-* `my-tweets`
-
-* `spotify-this-song`
-
-* `movie-this`
-
-* `do-what-it-says`
-
-*/
-
 const userCommand = process.argv[2];
+const prompt = require('prompt');
 
+//
+// Start the prompt
+//
+prompt.colors = false;
+prompt.message = "";
+prompt.delimiter = "";
+prompt.start();
+
+
+function cleanUpExtraInput(e) {
+    let cleanedInput = "";
+    if (e) {
+        cleanedInput = e.trim();
+        // i want to handle extra input with or without quotes
+        if (cleanedInput.startsWith(`'`) || cleanedInput.startsWith(`"`)) {
+            cleanedInput = cleanedInput.substr(1);
+        }
+        if (cleanedInput.endsWith(`'`) || cleanedInput.endsWith(`"`)) {
+            cleanedInput = cleanedInput.substr(0, cleanedInput.length - 1);
+        }
+    }
+    return cleanedInput;
+}
+
+// perform the command from the command line, anything else on the command
+// line after the command is extra input for the command
 function init(command, extra) {
-    extra = (extra ? extra : "");
-    myLog(`*** ${command} ${extra}`);
+    extra = cleanUpExtraInput(extra);
+    if (command) { // takes care of the case if you call the app with no command
+        myLog(`*** ${command} ${extra}`);
+    }
     switch (command) {
         case "n":
         case "new-tweet":
@@ -74,6 +90,7 @@ function init(command, extra) {
             console.log("d or do-what-it-says: Reads the random text file.");
             console.log("h or help: List the possible options.");
             console.log("**********");
+            wouldYouLikeToRunAgain();
     }
 }
 
@@ -98,10 +115,12 @@ function tweet(message) {
             else {
                 myLog(error);
             }
+            wouldYouLikeToRunAgain();
         });
     }
     else {
         myLog("Include a message to send a tweet.");
+        wouldYouLikeToRunAgain();
     }
 }
 
@@ -115,6 +134,7 @@ function getLast20Tweets() {
         else {
             myLog(error);
         }
+        wouldYouLikeToRunAgain();
     });
 
 }
@@ -125,7 +145,8 @@ function spotifySong(song) {
     }
     spotify.search({ type: 'track', query: song }, function (err, data) {
         if (err) {
-            return myLog('Error occurred: ' + err);
+            myLog('Error occurred: ' + err);
+            return wouldYouLikeToRunAgain();
         }
         else if (data.tracks.items.length <= 0) {
             myLog(`Song "${song}" not found.`);
@@ -139,6 +160,7 @@ function spotifySong(song) {
                 myLog("Link: " + data.tracks.items[0].preview_url);
             }  // some songs don't have previews ie. bullet with butterfly wings
         }
+        wouldYouLikeToRunAgain();
     });
 }
 
@@ -173,6 +195,8 @@ function getMovieInfo(title) {
         else {
             myLog(`${response.statusCode} - ${error}`);
         }
+
+        wouldYouLikeToRunAgain();
     });
 
 }
@@ -182,15 +206,23 @@ function doRandomShit() {
 
         // If the code experiences any errors it will log the error to the console.
         if (error) {
-            return myLog(error);
+            myLog(error);
+            return wouldYouLikeToRunAgain();
         }
         //console.log(data);
-
-        // Then split it by commas
-        var dataArr = data.split(",");
-        //console.log(dataArr);
-        if (dataArr[0] && dataArr[1]) {
-            init(dataArr[0], dataArr[1]);
+        if (data) {
+            // Then split it by commas
+            var dataArr = data.split(",");
+            //console.log(dataArr);
+            if (dataArr.length == 1) {
+                init(dataArr[0], "");
+            }
+            else if (dataArr.length == 2) {
+                init(dataArr[0], dataArr[1]);
+            }
+        }
+        else {  // empty file, run init with empty string to get help info
+            init("", "");
         }
     });
 }
@@ -201,6 +233,52 @@ function myLog(stuffToLog) {
         // If an error was experienced we say it.
         if (err) {
             console.log(err);
+        }
+    });
+}
+
+function wouldYouLikeToRunAgain() {
+    const schema = {
+        properties: {
+            yesOrNo: {
+                type: 'string',
+                description: 'Would you like to perform another task? Y or N:',
+                pattern: /^[ynYN]$/,
+                message: 'Input must be only Y or N.',
+                required: true
+            }
+        }
+    };
+
+    prompt.get(schema, function (err, result) {
+
+        if (!err && result.yesOrNo.toUpperCase() == "Y") {
+            getAnotherCommand();
+        }
+    });
+}
+
+function getAnotherCommand() {
+    const schema = {
+        properties: {
+            command: {
+                type: 'string',
+                description: 'Enter your command: '
+            }
+        }
+    };
+
+    prompt.get(schema, function (err, result) {
+
+        if (!err) {
+            // Then split it by spaces
+            let dataArr = result.command.split(" ");
+            let extraStuff = "";
+
+            for (let i = 1; i < dataArr.length; i++) {
+                extraStuff += " " + dataArr[i];
+            }
+            init(dataArr[0], extraStuff);
         }
     });
 }
